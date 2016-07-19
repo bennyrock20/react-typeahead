@@ -1,5 +1,6 @@
 'use strict';
 
+import cx from 'classnames';
 import React, {PropTypes} from 'react';
 
 import TokenizerInput from './TokenizerInput.react';
@@ -95,6 +96,14 @@ const Typeahead = React.createClass({
      * to control the component via its parent.
      */
     selected: PropTypes.array,
+    /**
+     * Class for typeahead dropdown component.
+     */
+    typeaheadMenuClassName: PropTypes.string,
+    /**
+     * Wrapper class for typeahead dropdown component.
+     */
+    typeaheadMenuWrapperClassName: PropTypes.string,
   },
 
   getDefaultProps() {
@@ -185,19 +194,23 @@ const Typeahead = React.createClass({
     let menu;
     if (showMenu) {
       menu =
-        <TypeaheadMenu
-          activeIndex={activeIndex}
-          align={this.props.align}
-          emptyLabel={this.props.emptyLabel}
-          initialResultCount={this.props.paginateResults}
-          labelKey={labelKey}
-          maxHeight={this.props.maxHeight}
-          newSelectionPrefix={this.props.newSelectionPrefix}
-          onClick={this._handleAddOption}
-          options={filteredOptions}
-          renderMenuItemChildren={this.props.renderMenuItemChildren}
-          text={inputText}
-        />;
+        <div className={cx(this.props.typeaheadMenuWrapperClassName
+          )}>
+          <TypeaheadMenu
+            activeIndex={activeIndex}
+            align={this.props.align}
+            className={this.props.typeaheadMenuClassName}
+            emptyLabel={this.props.emptyLabel}
+            initialResultCount={this.props.paginateResults}
+            labelKey={labelKey}
+            maxHeight={this.props.maxHeight}
+            newSelectionPrefix={this.props.newSelectionPrefix}
+            onClick={this._handleAddOption}
+            options={filteredOptions}
+            renderMenuItemChildren={this.props.renderMenuItemChildren}
+            text={inputText}
+          />
+        </div>;
     }
 
     return (
@@ -215,6 +228,7 @@ const Typeahead = React.createClass({
           onKeyDown={this._handleKeydown.bind(null, filteredOptions)}
           onRemove={this._handleRemoveOption}
           placeholder={this.props.placeholder}
+          ref={(ref) => this.inputComponent = ref}
           selected={selectedItems}
           text={inputText}
         />
