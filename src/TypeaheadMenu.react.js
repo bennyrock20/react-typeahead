@@ -6,13 +6,15 @@ import {findDOMNode} from 'react-dom';
 
 import cx from 'classnames';
 
-const Menu = props => (
-  <ul
-    {...props}
-    className={cx('dropdown-menu', props.className)}>
-    {props.children}
-  </ul>
-);
+const Menu = props => {
+  return (
+    <ul
+      {...props}
+      className={props.className}>
+      {props.children}
+    </ul>
+  );
+};
 
 const MenuItem = React.createClass({
   displayName: 'MenuItem',
@@ -31,10 +33,9 @@ const MenuItem = React.createClass({
         className={cx({
           'active': active,
           'disabled': disabled,
-        }, className)}>
-        <a href="#" onClick={this._handleClick}>
-          {children}
-        </a>
+        }, className)}
+        onClick={this._handleClick}>
+        {children}
       </li>
     );
   },
@@ -109,7 +110,7 @@ const TypeaheadMenu = React.createClass({
         className={cx('bootstrap-typeahead-menu', {
           'dropdown-menu-justify': align === 'justify',
           'dropdown-menu-right': align === 'right',
-        })}
+        }, this.props.className)}
         style={{
           maxHeight: maxHeight + 'px',
           overflow: 'auto',

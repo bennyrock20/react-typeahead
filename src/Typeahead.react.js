@@ -1,5 +1,6 @@
 'use strict';
 
+import cx from 'classnames';
 import React, {PropTypes} from 'react';
 
 import TokenizerInput from './TokenizerInput.react';
@@ -99,6 +100,14 @@ const Typeahead = React.createClass({
      * to control the component via its parent.
      */
     selected: PropTypes.array,
+    /**
+     * Class for typeahead dropdown component.
+     */
+    typeaheadMenuClassName: PropTypes.string,
+    /**
+     * Wrapper class for typeahead dropdown component.
+     */
+    typeaheadMenuWrapperClassName: PropTypes.string,
   },
 
   getDefaultProps() {
@@ -259,15 +268,18 @@ const Typeahead = React.createClass({
     ]);
 
     return (
-      <TypeaheadMenu
-        {...menuProps}
-        activeIndex={activeIndex}
-        initialResultCount={this.props.paginateResults}
-        labelKey={labelKey}
-        onClick={this._handleAddOption}
-        options={filteredOptions}
-        text={text}
-      />
+      <div className={cx(this.props.typeaheadMenuWrapperClassName)}>
+        <TypeaheadMenu
+          {...menuProps}
+          activeIndex={activeIndex}
+          className={this.props.typeaheadMenuClassName}
+          initialResultCount={this.props.paginateResults}
+          labelKey={labelKey}
+          onClick={this._handleAddOption}
+          options={filteredOptions}
+          text={text}
+        />
+      </div>
     );
   },
 
