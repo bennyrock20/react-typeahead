@@ -75,7 +75,7 @@ const TokenizerInput = React.createClass({
   },
 
   blur() {
-    this.refs.input.blur();
+    this.input.blur();
   },
 
   focus() {
@@ -133,7 +133,7 @@ const TokenizerInput = React.createClass({
     // If the user clicks anywhere inside the tokenizer besides a token,
     // focus the input.
     this.input.focus();
-    this.setState({focused: true});
+    this.setState({isFocused: true});
   },
 });
 
