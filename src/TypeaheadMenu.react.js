@@ -10,7 +10,7 @@ const Menu = (props) => {
   return (
     <ul
       {...props}
-      className={cx('dropdown-menu', props.className)}>
+      className={props.className}>
       {props.children}
     </ul>
   );
@@ -31,10 +31,9 @@ const MenuItem = React.createClass({
         className={cx({
           'active': this.props.active,
           'disabled': this.props.disabled,
-        }, this.props.className)}>
-        <a href="#" onClick={this._handleClick}>
-          {this.props.children}
-        </a>
+        }, this.props.className)}
+        onClick={this._handleClick}>
+        {this.props.children}
       </li>
     );
   },
@@ -109,7 +108,7 @@ const TypeaheadMenu = React.createClass({
         className={cx('bootstrap-typeahead-menu', {
           'dropdown-menu-justify': align === 'justify',
           'dropdown-menu-right': align === 'right',
-        })}
+        }, this.props.className)}
         style={{
           maxHeight: maxHeight + 'px',
           overflow: 'auto',
