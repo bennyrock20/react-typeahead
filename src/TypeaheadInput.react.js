@@ -89,6 +89,10 @@ const TypeaheadInput = React.createClass({
     );
   },
 
+  focus() {
+    this._handleInputFocus();
+  },
+
   _getHintText() {
     const {activeIndex, options, labelKey, selected, text} = this.props;
     const firstOption = head(options);

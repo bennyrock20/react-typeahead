@@ -195,6 +195,10 @@ const Typeahead = React.createClass({
     this.props.onInputChange(text);
   },
 
+  focus() {
+    this.refs.input.focus();
+  },
+
   /**
    * Filter out options that don't match the input string or, if multiple
    * selections are allowed, that have already been selected.
@@ -253,6 +257,7 @@ const Typeahead = React.createClass({
         onKeyDown={e => this._handleKeydown(filteredOptions, e)}
         onRemove={this._handleRemoveOption}
         options={filteredOptions}
+        ref="input"
         selected={selected.slice()}
         text={text}
       />
