@@ -10,33 +10,27 @@ import states from './exampleData';
 require('../css/Token.css');
 require('../css/Typeahead.css');
 
-const NO_INPUT_MESSAGE = 'No text.';
+const Checkbox = props => (
+  <div className="checkbox">
+    <label>
+      <input
+        checked={props.checked}
+        disabled={props.disabled}
+        name={props.name}
+        onChange={props.onChange}
+        type="checkbox"
+      />
+      {props.children || props.label}
+    </label>
+  </div>
+);
 
-const Checkbox = (props) => {
-  return (
-    <div className="checkbox">
-      <label>
-        <input
-          checked={props.checked}
-          disabled={props.disabled}
-          name={props.name}
-          onChange={props.onChange}
-          type="checkbox"
-        />
-        {props.children || props.label}
-      </label>
-    </div>
-  );
-};
-
-const ExampleSection = (props) => {
-  return (
-    <div className="example-section">
-      <h4>{props.title}</h4>
-      {props.children}
-    </div>
-  );
-};
+const ExampleSection = props => (
+  <div className="example-section">
+    <h4>{props.title}</h4>
+    {props.children}
+  </div>
+);
 
 const Example = React.createClass({
 
@@ -48,6 +42,7 @@ const Example = React.createClass({
       customMenuItemChildren: false,
       disabled: false,
       largeDataSet: false,
+      minLength: 0,
       multiple: false,
       preSelected: false,
       selected: [],
@@ -63,6 +58,7 @@ const Example = React.createClass({
       customMenuItemChildren,
       disabled,
       largeDataSet,
+      minLength,
       multiple,
       preSelected,
       selected,
@@ -75,7 +71,7 @@ const Example = React.createClass({
       props.renderMenuItemChildren = this._renderMenuItemChildren;
     }
 
-    let bigData = range(0, 2000).map((option) => ({name: option.toString()}));
+    let bigData = range(0, 2000).map(option => ({name: option.toString()}));
 
     return (
       <div className="example">
@@ -89,10 +85,12 @@ const Example = React.createClass({
             {...props}
             align={align}
             labelKey="name"
-            onChange={(selected) => this.setState({selected})}
-            onInputChange={(text) => this.setState({text})}
+            minLength={minLength}
+            onChange={selected => this.setState({selected})}
+            onInputChange={text => this.setState({text})}
             options={largeDataSet ? bigData : states}
             placeholder="Choose a state..."
+            ref="typeahead"
             selected={selected}
           />
           <ExampleSection title="Typeahead Options">
@@ -140,6 +138,12 @@ const Example = React.createClass({
                 onChange={this._handleChange}>
                 Align menu: {this._renderAlignmentSelector()}
               </Checkbox>
+              <Checkbox
+                checked={!!minLength}
+                name="minLength"
+                onChange={this._handleChange}>
+                Require minimum text input before showing results
+              </Checkbox>
               <button
                 className="btn btn-default"
                 onClick={this._handleClear}>
@@ -151,7 +155,7 @@ const Example = React.createClass({
             {this._renderSelectedItems(selected)}
           </ExampleSection>
           <ExampleSection title="Input Text">
-            {text || <div className="text-muted">{NO_INPUT_MESSAGE}</div>}
+            {text || <div className="text-muted">No text.</div>}
           </ExampleSection>
         </div>
       </div>
@@ -169,7 +173,7 @@ const Example = React.createClass({
 
   _renderSelectedItems(selected) {
     return selected && selected.length ?
-      selected.map((option) => option.name).join(', ') :
+      selected.map(option => option.name).join(', ') :
       <div className="text-muted">No items selected.</div>;
   },
 
@@ -179,7 +183,7 @@ const Example = React.createClass({
     return (
       <select
         disabled={!alignMenu}
-        onChange={(e) => this.setState({align: e.target.value})}
+        onChange={e => this.setState({align: e.target.value})}
         value={align}>
         <option value="justify">Justify (default)</option>
         <option value="left">Left</option>
@@ -207,6 +211,9 @@ const Example = React.createClass({
         let count = this.state.multiple ? 4 : 1;
         newState.selected = checked ? states.slice(0, count) : [];
         break;
+      case 'minLength':
+        newState.minLength = checked ? 1 : 0;
+        break;
       case 'multiple':
         let newSelection = this.state.selected.slice();
         !checked && newSelection.splice(1, newSelection.length);
@@ -218,10 +225,7 @@ const Example = React.createClass({
   },
 
   _handleClear(e) {
-    this.setState({
-      selected: [],
-      text: this.NO_INPUT_MESSAGE,
-    });
+    this.refs.typeahead.getInstance().clear();
   },
 });
 
