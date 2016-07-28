@@ -20,16 +20,13 @@ const TokenizerInput = React.createClass({
   propTypes: {
     disabled: PropTypes.bool,
     labelKey: PropTypes.string,
-    /**
-     * Input element placeholder text.
-     */
     placeholder: PropTypes.string,
     selected: PropTypes.array,
   },
 
   getInitialState() {
     return {
-      focused: false,
+      isFocused: false,
     };
   },
 
@@ -42,7 +39,7 @@ const TokenizerInput = React.createClass({
           'bootstrap-tokenizer',
           'clearfix',
           'form-control',
-          {'focus': this.state.focused}
+          {'focus': this.state.isFocused}
         )}
         disabled={disabled}
         onClick={this._handleInputFocus}
@@ -54,8 +51,8 @@ const TokenizerInput = React.createClass({
         tabIndex={-1}>
         {selected.map(this._renderToken)}
         <AutosizeInput
-          {...this.props}
           className="bootstrap-tokenizer-input"
+          disabled={disabled}
           inputStyle={{
             backgroundColor: 'inherit',
             border: 0,
@@ -65,9 +62,11 @@ const TokenizerInput = React.createClass({
             padding: 0,
           }}
           onBlur={this._handleBlur}
+          onChange={this._handleChange}
+          onFocus={this.props.onFocus}
           onKeyDown={this._handleKeydown}
           placeholder={selected.length ? null : placeholder}
-          ref={(ref) => this.input = ref}
+          ref={ref => this.input = ref}
           type="text"
           value={text}
         />
@@ -82,15 +81,19 @@ const TokenizerInput = React.createClass({
       <Token
         disabled={disabled}
         key={idx}
-        onRemove={onRemove.bind(null, option)}>
+        onRemove={() => onRemove(option)}>
         {option[labelKey]}
       </Token>
     );
   },
 
   _handleBlur(e) {
-    this.setState({focused: false});
-    this.props.onBlur && this.props.onBlur(e);
+    this.setState({isFocused: false});
+    this.props.onBlur(e);
+  },
+
+  _handleChange(e) {
+    this.props.onChange(e.target.value);
   },
 
   _handleKeydown(e) {
@@ -110,7 +113,7 @@ const TokenizerInput = React.createClass({
         break;
     }
 
-    this.props.onKeyDown && this.props.onKeyDown(e);
+    this.props.onKeyDown(e);
   },
 
   _handleInputFocus(e) {

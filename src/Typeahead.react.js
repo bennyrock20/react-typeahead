@@ -7,9 +7,9 @@ import TokenizerInput from './TokenizerInput.react';
 import TypeaheadInput from './TypeaheadInput.react';
 import TypeaheadMenu from './TypeaheadMenu.react';
 
-import {find, head, isEmpty, isEqual, uniqueId} from 'lodash';
+import {find, isEmpty, isEqual, noop, pick, uniqueId} from 'lodash';
 import {BACKSPACE, DOWN, ESC, RETURN, TAB, UP} from './keyCode';
-import listensToClickOutside from 'react-onclickoutside/decorator';
+import onClickOutside from 'react-onclickoutside';
 
 /**
  * Typeahead
@@ -54,6 +54,10 @@ const Typeahead = React.createClass({
      * Maximum height of the dropdown menu, in px.
      */
     maxHeight: PropTypes.number,
+    /**
+     * Number of input characters that must be entered before showing results.
+     */
+    minLength: PropTypes.number,
     /**
      * Whether or not multiple selections are allowed.
      */
@@ -111,13 +115,17 @@ const Typeahead = React.createClass({
       allowNew: false,
       defaultSelected: [],
       labelKey: 'label',
+      onBlur: noop,
+      onChange: noop,
+      onInputChange: noop,
+      minLength: 0,
       multiple: false,
       selected: [],
     };
   },
 
   getInitialState() {
-    let {defaultSelected, labelKey, multiple, selected} = this.props;
+    let {defaultSelected, selected} = this.props;
 
     selected = selected.slice();
     if (!isEmpty(defaultSelected)) {
@@ -125,39 +133,74 @@ const Typeahead = React.createClass({
     }
 
     return {
-      activeIndex: 0,
+      activeIndex: -1,
       selected,
       showMenu: false,
-      text: this._getText(labelKey, multiple, selected),
+      text: '',
     };
   },
 
   componentWillReceiveProps(nextProps) {
-    let {labelKey, multiple, selected} = nextProps;
+    const {multiple, selected} = nextProps;
 
-    if (!isEqual(this.props.selected, selected)) {
+    if (!isEqual(selected, this.props.selected)) {
       // If new selections are passed in via props, treat the component as a
       // controlled input.
-      this.setState({
-        selected,
-        text: this._getText(labelKey, multiple, selected),
-      });
+      this.setState({selected});
     }
 
-    if (this.props.multiple !== multiple) {
+    if (multiple !== this.props.multiple) {
       this.setState({text: ''});
     }
   },
 
   render() {
-    const {allowNew, labelKey, multiple, options} = this.props;
-    const {activeIndex, selected, showMenu, text} = this.state;
+    let filteredOptions = this._getFilteredOptions();
 
-    // Filter out options that don't match the input string or, if multiple
-    // selections are allowed, that have already been selected.
-    let filteredOptions = options.filter((option) => {
-      let labelString = option[labelKey];
+    return (
+      <div
+        className="bootstrap-typeahead open"
+        style={{position: 'relative'}}>
+        {this._renderInput(filteredOptions)}
+        {this._renderMenu(filteredOptions)}
+      </div>
+    );
+  },
 
+  /**
+   * Public method to allow external clearing of the input. Clears both text
+   * and selection(s).
+   */
+  clear() {
+    const {activeIndex, showMenu} = this.getInitialState();
+    const selected = [];
+    const text = '';
+
+    this.setState({
+      activeIndex,
+      selected,
+      showMenu,
+      text,
+    });
+
+    this.props.onChange(selected);
+    this.props.onInputChange(text);
+  },
+
+  /**
+   * Filter out options that don't match the input string or, if multiple
+   * selections are allowed, that have already been selected.
+   */
+  _getFilteredOptions() {
+    const {allowNew, labelKey, minLength, multiple, options} = this.props;
+    const {selected, text} = this.state;
+
+    if (text.length < minLength) {
+      return [];
+    }
+
+    let filteredOptions = options.filter(option => {
+      const labelString = option[labelKey];
       if (!labelString || typeof labelString !== 'string') {
         throw new Error(
           'One or more options does not have a valid label string. Please ' +
@@ -181,92 +224,84 @@ const Typeahead = React.createClass({
       filteredOptions = [newOption];
     }
 
-    let InputComponent = TokenizerInput;
-    let inputText = text;
-    let selectedItems = selected.slice();
+    return filteredOptions;
+  },
 
-    if (!multiple) {
-      InputComponent = TypeaheadInput;
-      selectedItems = head(selectedItems);
-      inputText = (selectedItems && selectedItems[labelKey]) || text;
-    }
-
-    let menu;
-    if (showMenu) {
-      menu =
-        <div className={cx(this.props.typeaheadMenuWrapperClassName
-          )}>
-          <TypeaheadMenu
-            activeIndex={activeIndex}
-            align={this.props.align}
-            className={this.props.typeaheadMenuClassName}
-            emptyLabel={this.props.emptyLabel}
-            initialResultCount={this.props.paginateResults}
-            labelKey={labelKey}
-            maxHeight={this.props.maxHeight}
-            newSelectionPrefix={this.props.newSelectionPrefix}
-            onClick={this._handleAddOption}
-            options={filteredOptions}
-            renderMenuItemChildren={this.props.renderMenuItemChildren}
-            text={inputText}
-          />
-        </div>;
-    }
+  _renderInput(filteredOptions) {
+    const {labelKey, multiple} = this.props;
+    const {activeIndex, selected, text} = this.state;
+    const Input = multiple ? TokenizerInput : TypeaheadInput;
+    const inputProps = pick(this.props, ['disabled', 'placeholder']);
 
     return (
-      <div
-        className="bootstrap-typeahead open"
-        style={{position: 'relative'}}>
-        <InputComponent
-          disabled={this.props.disabled}
-          filteredOptions={filteredOptions}
+      <Input
+        {...inputProps}
+        activeIndex={activeIndex}
+        labelKey={labelKey}
+        onAdd={this._handleAddOption}
+        onBlur={this._handleBlur}
+        onChange={this._handleTextChange}
+        onFocus={this._handleFocus}
+        onKeyDown={e => this._handleKeydown(filteredOptions, e)}
+        onRemove={this._handleRemoveOption}
+        options={filteredOptions}
+        selected={selected.slice()}
+        text={text}
+      />
+    );
+  },
+
+  _renderMenu(filteredOptions) {
+    const {labelKey, minLength} = this.props;
+    const {activeIndex, showMenu, text} = this.state;
+
+    if (!(showMenu && text.length >= minLength)) {
+      return null;
+    }
+
+    const menuProps = pick(this.props, [
+      'align',
+      'emptyLabel',
+      'maxHeight',
+      'newSelectionPrefix',
+      'renderMenuItemChildren',
+    ]);
+
+    return (
+      <div className={cx(this.props.typeaheadMenuWrapperClassName)}>
+        <TypeaheadMenu
+          {...menuProps}
+          activeIndex={activeIndex}
+          className={this.props.typeaheadMenuClassName}
+          initialResultCount={this.props.paginateResults}
           labelKey={labelKey}
-          onAdd={this._handleAddOption}
-          onBlur={this.props.onBlur}
-          onChange={this._handleTextChange}
-          onFocus={this._handleFocus}
-          onKeyDown={this._handleKeydown.bind(null, filteredOptions)}
-          onRemove={this._handleRemoveOption}
-          placeholder={this.props.placeholder}
-          ref={(ref) => this.inputComponent = ref}
-          selected={selectedItems}
-          text={inputText}
+          onClick={this._handleAddOption}
+          options={filteredOptions}
+          text={text}
         />
-        {menu}
       </div>
     );
   },
 
-  _getText(labelKey, multiple, selected) {
-    let selectedText = !isEmpty(selected) && head(selected)[labelKey];
-
-    if (!multiple && selectedText) {
-      return selectedText;
-    }
-
-    return '';
+  _handleBlur(e) {
+    // Note: Don't hide the menu here, since that interferes with other actions
+    // like making a selection by clicking on a menu item.
+    this.props.onBlur(e);
   },
 
   _handleFocus() {
     this.setState({showMenu: true});
   },
 
-  _handleTextChange(e) {
-    let text = e.target.value;
-
-    // Clear any selections when text is entered.
-    const {selected} = this.state;
-    if (!this.props.multiple && !isEmpty(selected)) {
-      this._handleRemoveOption(head(selected));
-    }
-
+  _handleTextChange(text) {
+    const {activeIndex} = this.getInitialState();
     this.setState({
-      activeIndex: 0,
+      activeIndex,
       showMenu: true,
       text,
     });
 
-    this.props.onInputChange && this.props.onInputChange(text);
+    this.props.onInputChange(text);
   },
 
   _handleKeydown(options, e) {
@@ -286,7 +321,11 @@ const Typeahead = React.createClass({
         activeIndex += e.keyCode === UP ? -1 : 1;
 
         // If we've reached the end, go back to the beginning or vice-versa.
-        activeIndex = (activeIndex + options.length) % options.length;
+        if (activeIndex === options.length) {
+          activeIndex = -1;
+        } else if (activeIndex === -2) {
+          activeIndex = options.length - 1;
+        }
 
         this.setState({activeIndex});
         break;
@@ -323,28 +362,21 @@ const Typeahead = React.createClass({
       text = selectedOption[labelKey];
     }
 
-    this.setState({
-      activeIndex: 0,
-      selected,
-      showMenu: false,
-      text,
-    });
+    this.setState({selected, text});
+    this._hideDropdown();
 
-    onChange && onChange(selected);
-    onInputChange && onInputChange(text);
+    onChange(selected);
+    onInputChange(text);
   },
 
   _handleRemoveOption(removedOption) {
     let selected = this.state.selected.slice();
-    selected = selected.filter((option) => !isEqual(option, removedOption));
+    selected = selected.filter(option => !isEqual(option, removedOption));
 
-    this.setState({
-      activeIndex: 0,
-      selected,
-      showMenu: false,
-    });
+    this.setState({selected});
+    this._hideDropdown();
 
-    this.props.onChange && this.props.onChange(selected);
+    this.props.onChange(selected);
   },
 
   /**
@@ -355,11 +387,12 @@ const Typeahead = React.createClass({
   },
 
   _hideDropdown() {
+    const {activeIndex, showMenu} = this.getInitialState();
     this.setState({
-      activeIndex: 0,
-      showMenu: false,
+      activeIndex,
+      showMenu,
     });
   },
 });
 
-export default listensToClickOutside(Typeahead);
+export default onClickOutside(Typeahead);
