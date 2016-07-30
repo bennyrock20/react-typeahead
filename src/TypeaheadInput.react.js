@@ -89,6 +89,10 @@ const TypeaheadInput = React.createClass({
     );
   },
 
+  blur() {
+    this.refs.input.blur();
+  },
+
   focus() {
     this._handleInputFocus();
   },

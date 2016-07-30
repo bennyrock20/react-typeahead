@@ -175,6 +175,10 @@ const Typeahead = React.createClass({
     );
   },
 
+  blur() {
+    this.refs.input.blur();
+  },
+
   /**
    * Public method to allow external clearing of the input. Clears both text
    * and selection(s).
