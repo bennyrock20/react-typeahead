@@ -227,7 +227,7 @@ const Typeahead = React.createClass({
 
       return !(
         labelString.toLowerCase().indexOf(text.toLowerCase()) === -1 ||
-        multiple && find(selected, option)
+        multiple && find(selected, o => isEqual(o, option))
       );
     });
 
