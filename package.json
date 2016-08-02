@@ -1,6 +1,6 @@
 {
   "name": "mesosphere-react-typeahead",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "React-based typeahead component",
   "main": "lib/index.js",
   "directories": {
