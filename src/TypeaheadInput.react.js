@@ -33,8 +33,8 @@ const TypeaheadInput = React.createClass({
   },
 
   componentDidUpdate(prevProps, prevState) {
-    const inputText = this._getInputText();
-    if (this.input) {
+    if (this.props.activeIndex !== prevProps.activeIndex) {
+      const inputText = this._getInputText();
       this.input.selectionStart = inputText.length;
     }
   },
@@ -90,7 +90,7 @@ const TypeaheadInput = React.createClass({
   },
 
   blur() {
-    this.refs.input.blur();
+    this.input.blur();
   },
 
   focus() {
