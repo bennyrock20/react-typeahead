@@ -13,28 +13,20 @@ import onClickOutside from 'react-onclickoutside';
  * Individual token component, generally displayed within the TokenizerInput
  * component, but can also be rendered on its own.
  */
-const Token = React.createClass({
-  displayName: 'Token',
+class Token extends React.Component {
+  constructor() {
+    super();
 
-  propTypes: {
-    /**
-     * Handler for removing/deleting the token. If not defined, the token will
-     * be rendered in a read-only state.
-     */
-    onRemove: PropTypes.func,
-  },
-
-  getInitialState() {
-    return {
+    this.state = {
       selected: false,
     };
-  },
+  }
 
   render() {
     return this.props.onRemove && !this.props.disabled ?
       this._renderRemoveableToken() :
       this._renderToken();
-  },
+  }
 
   _renderRemoveableToken() {
     return (
@@ -56,7 +48,7 @@ const Token = React.createClass({
         </span>
       </div>
     );
-  },
+  }
 
   _renderToken() {
     const {className, disabled, href} = this.props;
@@ -75,12 +67,12 @@ const Token = React.createClass({
         {this.props.children}
       </div>
     );
-  },
+  }
 
   _handleBlur(e) {
     findDOMNode(this).blur();
     this.setState({selected: false});
-  },
+  }
 
   _handleKeyDown(e) {
     switch (e.keyCode) {
@@ -93,23 +85,31 @@ const Token = React.createClass({
         }
         break;
     }
-  },
+  }
 
   /**
    * From `onClickOutside` mixin.
    */
   handleClickOutside(e) {
     this._handleBlur();
-  },
+  }
 
   _handleRemove(e) {
     this.props.onRemove && this.props.onRemove();
-  },
+  }
 
   _handleSelect(e) {
     e.stopPropagation();
     this.setState({selected: true});
-  },
-});
+  }
+}
+
+Token.propTypes = {
+  /**
+   * Handler for removing/deleting the token. If not defined, the token will
+   * be rendered in a read-only state.
+   */
+  onRemove: PropTypes.func,
+};
 
 export default onClickOutside(Token);
