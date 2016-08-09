@@ -15,139 +15,28 @@ import {DOWN, ESC, RETURN, TAB, UP} from './keyCode';
 /**
  * Typeahead
  */
-const Typeahead = React.createClass({
-  displayName: 'Typeahead',
+class Typeahead extends React.Component {
+  constructor() {
+    super();
 
-  propTypes: {
-    /**
-     * Specify menu alignment. The default value is `justify`, which makes the
-     * menu as wide as the input and truncates long values. Specifying `left`
-     * or `right` will align the menu to that side and the width will be
-     * determined by the length of menu item values.
-     */
-    align: PropTypes.oneOf(['justify', 'left', 'right']),
-    /**
-     * Allows the creation of new selections on the fly. Note that any new items
-     * will be added to the list of selections, but not the list of original
-     * options unless handled as such by `Typeahead`'s parent.
-     */
-    allowNew: PropTypes.bool,
-    /**
-     * Specify any pre-selected options. Use only if you want the component to
-     * be uncontrolled.
-     */
-    defaultSelected: PropTypes.array,
-    /**
-     * Whether to disable the input. Will also disable selections when
-     * `multiple={true}`.
-     */
-    disabled: PropTypes.bool,
-    /**
-     * Message to display in the menu if there are no valid results.
-     */
-    emptyLabel: PropTypes.string,
-    /**
-     * Specify which option key to use for display. By default, the selector
-     * will use the `label` key.
-     */
-    labelKey: PropTypes.string,
-    /**
-     * Maximum height of the dropdown menu, in px.
-     */
-    maxHeight: PropTypes.number,
-    /**
-     * Number of input characters that must be entered before showing results.
-     */
-    minLength: PropTypes.number,
-    /**
-     * Whether or not multiple selections are allowed.
-     */
-    multiple: PropTypes.bool,
-    /**
-     * Provides the ability to specify a prefix before the user-entered text to
-     * indicate that the selection will be new. No-op unless `allowNew={true}`.
-     */
-    newSelectionPrefix: PropTypes.string,
-    /**
-     * Callback fired when the input is blurred. Receives an event.
-     */
-    onBlur: PropTypes.func,
-    /**
-     * Callback fired whenever items are added or removed. Receives an array of
-     * the selected options.
-     */
-    onChange: PropTypes.func,
-    /**
-     * Callback for handling changes to the user-input text.
-     */
-    onInputChange: PropTypes.func,
-    /**
-     * Full set of options, including pre-selected options.
-     */
-    options: PropTypes.array.isRequired,
-    /**
-     * For large option sets, initially display a subset of results for improved
-     * performance. If users scroll to the end, the last item will be a link to
-     * display the next set of results. Value represents the number of results
-     * to display. `0` will display all results.
-     */
-    paginateResults: PropTypes.number,
-    /**
-     * Prompt displayed when large data sets are paginated.
-     */
-    paginationText: PropTypes.string,
-    /**
-     * Placeholder text for the input.
-     */
-    placeholder: PropTypes.string,
-    /**
-     * Provides a hook for customized rendering of menu item contents.
-     */
-    renderMenuItemChildren: PropTypes.func,
-    /**
-     * The selected option(s) displayed in the input. Use this prop if you want
-     * to control the component via its parent.
-     */
-    selected: PropTypes.array,
-    /**
-     * Class for typeahead dropdown component.
-     */
-    typeaheadMenuClassName: PropTypes.string,
-    /**
-     * Wrapper class for typeahead dropdown component.
-     */
-    typeaheadMenuWrapperClassName: PropTypes.string,
-  },
-
-  getDefaultProps() {
-    return {
-      allowNew: false,
-      defaultSelected: [],
-      labelKey: 'label',
-      onBlur: noop,
-      onChange: noop,
-      onInputChange: noop,
-      minLength: 0,
-      multiple: false,
-      selected: [],
+    this.state = {
+      activeIndex: -1,
+      selected: null,
+      showMenu: false,
+      text: '',
     };
-  },
+  }
 
-  getInitialState() {
+  componentWillMount() {
     const {defaultSelected} = this.props;
-
     let selected = this.props.selected.slice();
+
     if (!isEmpty(defaultSelected)) {
       selected = defaultSelected;
     }
 
-    return {
-      activeIndex: -1,
-      selected,
-      showMenu: false,
-      text: '',
-    };
-  },
+    this.setState({selected});
+  }
 
   componentWillReceiveProps(nextProps) {
     const {multiple, selected} = nextProps;
@@ -161,7 +50,7 @@ const Typeahead = React.createClass({
     if (multiple !== this.props.multiple) {
       this.setState({text: ''});
     }
-  },
+  }
 
   render() {
     const {options, ...props} = this.props;
@@ -176,11 +65,11 @@ const Typeahead = React.createClass({
         {this._renderMenu(filteredOptions)}
       </div>
     );
-  },
+  }
 
   blur() {
     this.input.blur();
-  },
+  }
 
   /**
    * Public method to allow external clearing of the input. Clears both text
@@ -200,11 +89,11 @@ const Typeahead = React.createClass({
 
     this.props.onChange(selected);
     this.props.onInputChange(text);
-  },
+  }
 
   focus() {
     this.input.focus();
-  },
+  }
 
   _renderInput(filteredOptions) {
     const {labelKey, multiple} = this.props;
@@ -229,7 +118,7 @@ const Typeahead = React.createClass({
         text={text}
       />
     );
-  },
+  }
 
   _renderMenu(filteredOptions) {
     const {
@@ -275,17 +164,17 @@ const Typeahead = React.createClass({
     }
 
     return typeaheadMenu;
-  },
+  }
 
   _handleBlur(e) {
     // Note: Don't hide the menu here, since that interferes with other actions
     // like making a selection by clicking on a menu item.
     this.props.onBlur(e);
-  },
+  }
 
   _handleFocus() {
     this.setState({showMenu: true});
-  },
+  }
 
   _handleTextChange(text) {
     const {activeIndex} = this.getInitialState();
@@ -296,7 +185,7 @@ const Typeahead = React.createClass({
     });
 
     this.props.onInputChange(text);
-  },
+  }
 
   _handleKeydown(options, e) {
     let {activeIndex} = this.state;
@@ -341,7 +230,7 @@ const Typeahead = React.createClass({
         }
         break;
     }
-  },
+  }
 
   _handleAddOption(selectedOption) {
     const {multiple, labelKey, onChange, onInputChange} = this.props;
@@ -366,7 +255,7 @@ const Typeahead = React.createClass({
 
     onChange(selected);
     onInputChange(text);
-  },
+  }
 
   _handleRemoveOption(removedOption) {
     let selected = this.state.selected.slice();
@@ -379,14 +268,14 @@ const Typeahead = React.createClass({
     this._hideDropdown();
 
     this.props.onChange(selected);
-  },
+  }
 
   /**
    * From `listensToClickOutside` HOC.
    */
   handleClickOutside(e) {
     this._hideDropdown();
-  },
+  }
 
   _hideDropdown() {
     const {activeIndex, showMenu} = this.getInitialState();
@@ -394,7 +283,120 @@ const Typeahead = React.createClass({
       activeIndex,
       showMenu,
     });
-  },
-});
+  }
+}
+
+Typeahead.defaultProps = {
+  allowNew: false,
+  defaultSelected: [],
+  labelKey: 'label',
+  onBlur: noop,
+  onChange: noop,
+  onInputChange: noop,
+  minLength: 0,
+  multiple: false,
+  selected: [],
+};
+
+Typeahead.propTypes = {
+  /**
+   * Specify menu alignment. The default value is `justify`, which makes the
+   * menu as wide as the input and truncates long values. Specifying `left`
+   * or `right` will align the menu to that side and the width will be
+   * determined by the length of menu item values.
+   */
+  align: PropTypes.oneOf(['justify', 'left', 'right']),
+  /**
+   * Allows the creation of new selections on the fly. Note that any new items
+   * will be added to the list of selections, but not the list of original
+   * options unless handled as such by `Typeahead`'s parent.
+   */
+  allowNew: PropTypes.bool,
+  /**
+   * Specify any pre-selected options. Use only if you want the component to
+   * be uncontrolled.
+   */
+  defaultSelected: PropTypes.array,
+  /**
+   * Whether to disable the input. Will also disable selections when
+   * `multiple={true}`.
+   */
+  disabled: PropTypes.bool,
+  /**
+   * Message to display in the menu if there are no valid results.
+   */
+  emptyLabel: PropTypes.string,
+  /**
+   * Specify which option key to use for display. By default, the selector
+   * will use the `label` key.
+   */
+  labelKey: PropTypes.string,
+  /**
+   * Maximum height of the dropdown menu, in px.
+   */
+  maxHeight: PropTypes.number,
+  /**
+   * Number of input characters that must be entered before showing results.
+   */
+  minLength: PropTypes.number,
+  /**
+   * Whether or not multiple selections are allowed.
+   */
+  multiple: PropTypes.bool,
+  /**
+   * Provides the ability to specify a prefix before the user-entered text to
+   * indicate that the selection will be new. No-op unless `allowNew={true}`.
+   */
+  newSelectionPrefix: PropTypes.string,
+  /**
+   * Callback fired when the input is blurred. Receives an event.
+   */
+  onBlur: PropTypes.func,
+  /**
+   * Callback fired whenever items are added or removed. Receives an array of
+   * the selected options.
+   */
+  onChange: PropTypes.func,
+  /**
+   * Callback for handling changes to the user-input text.
+   */
+  onInputChange: PropTypes.func,
+  /**
+   * Full set of options, including pre-selected options.
+   */
+  options: PropTypes.array.isRequired,
+  /**
+   * For large option sets, initially display a subset of results for improved
+   * performance. If users scroll to the end, the last item will be a link to
+   * display the next set of results. Value represents the number of results
+   * to display. `0` will display all results.
+   */
+  paginateResults: PropTypes.number,
+  /**
+   * Prompt displayed when large data sets are paginated.
+   */
+  paginationText: PropTypes.string,
+  /**
+   * Placeholder text for the input.
+   */
+  placeholder: PropTypes.string,
+  /**
+   * Provides a hook for customized rendering of menu item contents.
+   */
+  renderMenuItemChildren: PropTypes.func,
+  /**
+   * The selected option(s) displayed in the input. Use this prop if you want
+   * to control the component via its parent.
+   */
+  selected: PropTypes.array,
+  /**
+   * Class for typeahead dropdown component.
+   */
+  typeaheadMenuClassName: PropTypes.string,
+  /**
+   * Wrapper class for typeahead dropdown component.
+   */
+  typeaheadMenuWrapperClassName: PropTypes.string,
+};
 
 export default onClickOutside(Typeahead);
