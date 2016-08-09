@@ -1,15 +1,16 @@
 'use strict';
 
-import cx from 'classnames';
 import React, {PropTypes} from 'react';
 
 import TokenizerInput from './TokenizerInput.react';
 import TypeaheadInput from './TypeaheadInput.react';
 import TypeaheadMenu from './TypeaheadMenu.react';
 
-import {find, isEmpty, isEqual, noop, pick, uniqueId} from 'lodash';
-import {BACKSPACE, DOWN, ESC, RETURN, TAB, UP} from './keyCode';
+import getFilteredOptions from './getFilteredOptions';
+import {isEmpty, isEqual, noop, pick} from 'lodash';
 import onClickOutside from 'react-onclickoutside';
+
+import {DOWN, ESC, RETURN, TAB, UP} from './keyCode';
 
 /**
  * Typeahead
@@ -67,9 +68,13 @@ const Typeahead = React.createClass({
      * indicate that the selection will be new. No-op unless `allowNew={true}`.
      */
     newSelectionPrefix: PropTypes.string,
+    /**
+     * Callback fired when the input is blurred. Receives an event.
+     */
     onBlur: PropTypes.func,
     /**
-     * Callback for handling selected values.
+     * Callback fired whenever items are added or removed. Receives an array of
+     * the selected options.
      */
     onChange: PropTypes.func,
     /**
@@ -87,6 +92,10 @@ const Typeahead = React.createClass({
      * to display. `0` will display all results.
      */
     paginateResults: PropTypes.number,
+    /**
+     * Prompt displayed when large data sets are paginated.
+     */
+    paginationText: PropTypes.string,
     /**
      * Placeholder text for the input.
      */
@@ -155,7 +164,9 @@ const Typeahead = React.createClass({
   },
 
   render() {
-    let filteredOptions = this._getFilteredOptions();
+    const {options, ...props} = this.props;
+    const {selected, text} = this.state;
+    const filteredOptions = getFilteredOptions(options, text, selected, props);
 
     return (
       <div
@@ -165,6 +176,10 @@ const Typeahead = React.createClass({
         {this._renderMenu(filteredOptions)}
       </div>
     );
+  },
+
+  blur() {
+    this.input && this.input.blur();
   },
 
   /**
@@ -187,44 +202,8 @@ const Typeahead = React.createClass({
     this.props.onInputChange(text);
   },
 
-  /**
-   * Filter out options that don't match the input string or, if multiple
-   * selections are allowed, that have already been selected.
-   */
-  _getFilteredOptions() {
-    const {allowNew, labelKey, minLength, multiple, options} = this.props;
-    const {selected, text} = this.state;
-
-    if (text.length < minLength) {
-      return [];
-    }
-
-    let filteredOptions = options.filter(option => {
-      const labelString = option[labelKey];
-      if (!labelString || typeof labelString !== 'string') {
-        throw new Error(
-          'One or more options does not have a valid label string. Please ' +
-          'check the `labelKey` prop to ensure that it matches the correct ' +
-          'option key and provides a string for filtering and display.'
-        );
-      }
-
-      return !(
-        labelString.toLowerCase().indexOf(text.toLowerCase()) === -1 ||
-        multiple && find(selected, option)
-      );
-    });
-
-    if (!filteredOptions.length && allowNew && !!text.trim()) {
-      let newOption = {
-        id: uniqueId('new-id-'),
-        customOption: true,
-      };
-      newOption[labelKey] = text;
-      filteredOptions = [newOption];
-    }
-
-    return filteredOptions;
+  focus() {
+    this.input && this.input.focus();
   },
 
   _renderInput(filteredOptions) {
@@ -245,6 +224,7 @@ const Typeahead = React.createClass({
         onKeyDown={e => this._handleKeydown(filteredOptions, e)}
         onRemove={this._handleRemoveOption}
         options={filteredOptions}
+        ref={ref => this.input = ref}
         selected={selected.slice()}
         text={text}
       />
@@ -252,7 +232,12 @@ const Typeahead = React.createClass({
   },
 
   _renderMenu(filteredOptions) {
-    const {labelKey, minLength} = this.props;
+    const {
+      labelKey,
+      minLength,
+      typeaheadMenuClassName,
+      typeaheadMenuWrapperClassName,
+    } = this.props;
     const {activeIndex, showMenu, text} = this.state;
 
     if (!(showMenu && text.length >= minLength)) {
@@ -264,23 +249,32 @@ const Typeahead = React.createClass({
       'emptyLabel',
       'maxHeight',
       'newSelectionPrefix',
+      'paginationText',
       'renderMenuItemChildren',
     ]);
 
-    return (
-      <div className={cx(this.props.typeaheadMenuWrapperClassName)}>
-        <TypeaheadMenu
-          {...menuProps}
-          activeIndex={activeIndex}
-          className={this.props.typeaheadMenuClassName}
-          initialResultCount={this.props.paginateResults}
-          labelKey={labelKey}
-          onClick={this._handleAddOption}
-          options={filteredOptions}
-          text={text}
-        />
-      </div>
+    let typeaheadMenu = (
+      <TypeaheadMenu
+        {...menuProps}
+        activeIndex={activeIndex}
+        className={typeaheadMenuClassName}
+        initialResultCount={this.props.paginateResults}
+        labelKey={labelKey}
+        onClick={this._handleAddOption}
+        options={filteredOptions}
+        text={text}
+      />
     );
+
+    if (typeaheadMenuWrapperClassName) {
+      return (
+        <div className={typeaheadMenuWrapperClassName}>
+          {typeaheadMenu}
+        </div>
+      );
+    }
+
+    return typeaheadMenu;
   },
 
   _handleBlur(e) {
@@ -308,13 +302,14 @@ const Typeahead = React.createClass({
     let {activeIndex} = this.state;
 
     switch (e.keyCode) {
-      case BACKSPACE:
-        // Don't let the browser go back.
-        e.stopPropagation();
-        break;
       case UP:
       case DOWN:
-        // Prevent page from scrolling.
+        // Don't cycle through the options if the menu is hidden.
+        if (!this.state.showMenu) {
+          return;
+        }
+
+        // Prevents input cursor from going to the beginning when pressing up.
         e.preventDefault();
 
         // Increment or decrement index based on user keystroke.
@@ -331,11 +326,15 @@ const Typeahead = React.createClass({
         break;
       case ESC:
       case TAB:
-        // Prevent things like unintentionally closing dialogs.
-        e.stopPropagation();
+        // Prevent closing dialogs.
+        e.keyCode === ESC && e.preventDefault();
+
         this._hideDropdown();
         break;
       case RETURN:
+        // Prevent submitting forms.
+        e.preventDefault();
+
         if (this.state.showMenu) {
           let selected = options[activeIndex];
           selected && this._handleAddOption(selected);
@@ -372,6 +371,9 @@ const Typeahead = React.createClass({
   _handleRemoveOption(removedOption) {
     let selected = this.state.selected.slice();
     selected = selected.filter(option => !isEqual(option, removedOption));
+
+    // Make sure the input stays focused after the item is removed.
+    this.focus();
 
     this.setState({selected});
     this._hideDropdown();

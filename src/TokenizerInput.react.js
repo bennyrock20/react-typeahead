@@ -74,6 +74,14 @@ const TokenizerInput = React.createClass({
     );
   },
 
+  blur() {
+    this.input.blur();
+  },
+
+  focus() {
+    this._handleInputFocus();
+  },
+
   _renderToken(option, idx) {
     const {disabled, labelKey, onRemove} = this.props;
 
@@ -125,7 +133,7 @@ const TokenizerInput = React.createClass({
     // If the user clicks anywhere inside the tokenizer besides a token,
     // focus the input.
     this.input.focus();
-    this.setState({focused: true});
+    this.setState({isFocused: true});
   },
 });
 

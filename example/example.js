@@ -4,14 +4,25 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Typeahead from '../src/Typeahead.react';
 
+import cx from 'classnames';
 import {range} from 'lodash';
 import states from './exampleData';
+
+const bigData = range(0, 2000).map(option => ({name: option.toString()}));
+const PRESELECTED_COUNT = 4;
 
 require('../css/Token.css');
 require('../css/Typeahead.css');
 
+const Button = props => (
+  <button
+    {...props}
+    className="btn btn-default"
+  />
+);
+
 const Checkbox = props => (
-  <div className="checkbox">
+  <div className={cx('checkbox', {'disabled': props.disabled})}>
     <label>
       <input
         checked={props.checked}
@@ -71,8 +82,6 @@ const Example = React.createClass({
       props.renderMenuItemChildren = this._renderMenuItemChildren;
     }
 
-    let bigData = range(0, 2000).map(option => ({name: option.toString()}));
-
     return (
       <div className="example">
         <div className="jumbotron">
@@ -92,6 +101,7 @@ const Example = React.createClass({
             placeholder="Choose a state..."
             ref="typeahead"
             selected={selected}
+            typeaheadMenuClassName="dropdown-menu"
           />
           <ExampleSection title="Typeahead Options">
             <div className="form-group">
@@ -144,11 +154,18 @@ const Example = React.createClass({
                 onChange={this._handleChange}>
                 Require minimum text input before showing results
               </Checkbox>
-              <button
-                className="btn btn-default"
-                onClick={this._handleClear}>
-                Clear Input
-              </button>
+            </div>
+          </ExampleSection>
+          <ExampleSection title="Typeahead Methods">
+            <div className="btn-toolbar">
+              <Button
+                onClick={() => this.refs.typeahead.getInstance().clear()}>
+                Clear
+              </Button>
+              <Button
+                onClick={() => this.refs.typeahead.getInstance().focus()}>
+                Focus
+              </Button>
             </div>
           </ExampleSection>
           <ExampleSection title="Selected Items">
@@ -206,10 +223,15 @@ const Example = React.createClass({
         break;
       case 'largeDataSet':
         newState.customMenuItemChildren = false;
+        if (this.state.preSelected) {
+          const options = checked ? bigData : states;
+          newState.selected = options.slice(0, PRESELECTED_COUNT);
+        }
         break;
       case 'preSelected':
-        let count = this.state.multiple ? 4 : 1;
-        newState.selected = checked ? states.slice(0, count) : [];
+        let count = this.state.multiple ? PRESELECTED_COUNT : 1;
+        let options = this.state.largeDataSet ? bigData : states;
+        newState.selected = checked ? options.slice(0, count) : [];
         break;
       case 'minLength':
         newState.minLength = checked ? 1 : 0;
@@ -222,10 +244,6 @@ const Example = React.createClass({
     }
 
     this.setState(newState);
-  },
-
-  _handleClear(e) {
-    this.refs.typeahead.getInstance().clear();
   },
 });
 

@@ -1,10 +1,10 @@
-var webpack = require('webpack');
+var webpackConfigBase = require('./webpack.config.base');
 
-module.exports = {
+module.exports = Object.assign(webpackConfigBase, {
   entry: './src/index',
   output: {
     path: './dist',
-    filename: 'react-bootstrap-typeahead.min.js',
+    filename: 'react-bootstrap-typeahead.js',
     library: 'ReactBootstrapTypeahead',
     libraryTarget: 'umd'
   },
@@ -23,16 +23,4 @@ module.exports = {
       amd: 'react-dom'
     }
   }],
-  module: {
-    loaders: [
-      { test: /\.js$/, loader: 'babel-loader', exclude: /node_modules/ },
-      { test: /\.(css|scss)$/, loader: 'style-loader!css-loader' }
-    ]
-  },
-  plugins: [
-    new webpack.optimize.OccurenceOrderPlugin(),
-  ],
-  resolve: {
-    extensions: ['', '.js']
-  }
-};
+});

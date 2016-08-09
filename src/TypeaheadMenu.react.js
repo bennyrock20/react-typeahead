@@ -1,50 +1,11 @@
 'use strict';
 
+import cx from 'classnames';
 import Highlight from 'react-highlighter';
 import React, {PropTypes} from 'react';
-import {findDOMNode} from 'react-dom';
 
-import cx from 'classnames';
-
-const Menu = props => {
-  return (
-    <ul
-      {...props}
-      className={props.className}>
-      {props.children}
-    </ul>
-  );
-};
-
-const MenuItem = React.createClass({
-  displayName: 'MenuItem',
-
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.active) {
-      findDOMNode(this).firstChild.focus();
-    }
-  },
-
-  render() {
-    const {active, children, className, disabled} = this.props;
-
-    return (
-      <li
-        className={cx({
-          'active': active,
-          'disabled': disabled,
-        }, className)}
-        onClick={this._handleClick}>
-        {children}
-      </li>
-    );
-  },
-
-  _handleClick(e) {
-    e.preventDefault();
-    this.props.onClick && this.props.onClick();
-  },
-});
+import Menu from './Menu.react';
+import MenuItem from './MenuItem.react';
 
 const TypeaheadMenu = React.createClass({
   displayName: 'TypeaheadMenu',
@@ -52,12 +13,14 @@ const TypeaheadMenu = React.createClass({
   propTypes: {
     activeIndex: PropTypes.number,
     align: PropTypes.oneOf(['justify', 'left', 'right']),
+    className: PropTypes.string,
     emptyLabel: PropTypes.string,
     initialResultCount: PropTypes.number,
     labelKey: PropTypes.string.isRequired,
     maxHeight: PropTypes.number,
     newSelectionPrefix: PropTypes.string,
     options: PropTypes.array,
+    paginationText: PropTypes.string,
     renderMenuItemChildren: PropTypes.func,
     text: PropTypes.string.isRequired,
   },
@@ -68,7 +31,8 @@ const TypeaheadMenu = React.createClass({
       emptyLabel: 'No matches found.',
       initialResultCount: 100,
       maxHeight: 300,
-      newSelectionPrefix: 'New selection:',
+      newSelectionPrefix: 'New selection: ',
+      paginationText: 'Display additional results...',
     };
   },
 
@@ -84,26 +48,15 @@ const TypeaheadMenu = React.createClass({
   },
 
   render() {
-    const {align, maxHeight, options} = this.props;
+    const {align, emptyLabel, maxHeight, options} = this.props;
 
     // Render the max number of results or all results.
-    let results = options.slice(0, this.state.resultCount || options.length);
-    results = results.length ?
+    const results = options.slice(0, this.state.resultCount || options.length);
+    const menuItems = results.length ?
       results.map(this._renderMenuItem) :
-      <MenuItem disabled>{this.props.emptyLabel}</MenuItem>;
-
-    // Allow user to see more results, if available.
-    let paginationItem;
-    let separator;
-    if (results.length < options.length) {
-      paginationItem =
-        <MenuItem
-          className="bootstrap-typeahead-menu-paginator"
-          onClick={this._handlePagination}>
-          Display next {this.props.initialResultCount} results...
-        </MenuItem>;
-      separator = <li className="divider" role="separator" />;
-    }
+      <MenuItem disabled>
+        {emptyLabel}
+      </MenuItem>;
 
     return (
       <Menu
@@ -115,9 +68,8 @@ const TypeaheadMenu = React.createClass({
           maxHeight: maxHeight + 'px',
           overflow: 'auto',
         }}>
-        {results}
-        {separator}
-        {paginationItem}
+        {menuItems}
+        {this._renderPaginationMenuItem(results)}
       </Menu>
     );
   },
@@ -138,16 +90,49 @@ const TypeaheadMenu = React.createClass({
       onClick: () => onClick(option),
     };
 
+    if (option.customOption) {
+      return (
+        <MenuItem {...menuItemProps}>
+          {newSelectionPrefix}
+          <Highlight search={text}>
+            {option[labelKey]}
+          </Highlight>
+        </MenuItem>
+      );
+    }
+
     return renderMenuItemChildren ?
       <MenuItem {...menuItemProps}>
         {renderMenuItemChildren(this.props, option, idx)}
       </MenuItem> :
       <MenuItem {...menuItemProps}>
-        {option.customOption && `${newSelectionPrefix} `}
         <Highlight search={text}>
           {option[labelKey]}
         </Highlight>
       </MenuItem>;
+  },
+
+  /**
+   * Allow user to see more results, if available.
+   */
+  _renderPaginationMenuItem(results) {
+    const {options, paginationText} = this.props;
+
+    if (results.length < options.length) {
+      return [
+        <li
+          className="divider"
+          key="pagination-item-divider"
+          role="separator"
+        />,
+        <MenuItem
+          className="bootstrap-typeahead-menu-paginator"
+          key="pagination-item"
+          onClick={this._handlePagination}>
+          {paginationText}
+        </MenuItem>,
+      ];
+    }
   },
 
   _handlePagination(e) {
