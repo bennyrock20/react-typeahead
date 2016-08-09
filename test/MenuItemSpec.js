@@ -33,7 +33,7 @@ describe('<MenuItem>', () => {
 
   it('triggers an event when clicked', () => {
     const menuItemNode = getMenuItemNode({onClick});
-    ReactTestUtils.Simulate.click(menuItemNode.childNodes[0]);
+    ReactTestUtils.Simulate.click(menuItemNode);
 
     expect(clickValue).to.equal('clicked');
   });
